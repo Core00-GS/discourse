@@ -140,12 +140,8 @@ export function setupHashtagAutocomplete(
   );
 }
 
-export function hashtagTriggerRule(textarea) {
-  if (inCodeBlock(textarea.value, caretPosition(textarea))) {
-    return false;
-  }
-
-  return true;
+export async function hashtagTriggerRule(textarea) {
+  return !(await inCodeBlock(textarea.value, caretPosition(textarea)));
 }
 
 function _setup(

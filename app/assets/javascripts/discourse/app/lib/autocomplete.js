@@ -242,7 +242,7 @@ export default function (options) {
           // the time autocomplete was first displayed and the time of completion
           // Specifically this may happen due to uploads which inject a placeholder
           // which is later replaced with a different length string.
-          let pos = guessCompletePosition({ completeTerm: true });
+          let pos = await guessCompletePosition({ completeTerm: true });
 
           if (
             pos.completeStart !== undefined &&
@@ -537,19 +537,19 @@ export default function (options) {
     closeAutocomplete();
   });
 
-  function checkTriggerRule(opts) {
-    return options.triggerRule ? options.triggerRule(me[0], opts) : true;
+  async function checkTriggerRule(opts) {
+    return (await options.triggerRule?.(me[0], opts)) ?? true;
   }
 
-  function handleKeyUp(e) {
+  async function handleKeyUp(e) {
     if (options.debounced) {
       discourseDebounce(this, performAutocomplete, e, INPUT_DELAY);
     } else {
-      performAutocomplete(e);
+      await performAutocomplete(e);
     }
   }
 
-  function performAutocomplete(e) {
+  async function performAutocomplete(e) {
     if ([keys.esc, keys.enter].includes(e.which)) {
       return true;
     }
@@ -572,8 +572,9 @@ export default function (options) {
     if (completeStart === null && cp > 0) {
       if (key === options.key) {
         let prevChar = me.val().charAt(cp - 2);
+        const shouldTrigger = await checkTriggerRule();
         if (
-          checkTriggerRule() &&
+          shouldTrigger &&
           (!prevChar || allowedLettersRegex.test(prevChar))
         ) {
           completeStart = cp - 1;
@@ -586,7 +587,7 @@ export default function (options) {
     }
   }
 
-  function guessCompletePosition(opts) {
+  async function guessCompletePosition(opts) {
     let prev, stopFound, term;
     let prevIsGood = true;
     let element = me[0];
@@ -612,9 +613,10 @@ export default function (options) {
 
       if (stopFound) {
         prev = element.value[caretPos - 1];
+        const shouldTrigger = await checkTriggerRule({ backSpace });
 
         if (
-          checkTriggerRule({ backSpace }) &&
+          shouldTrigger &&
           (prev === undefined || allowedLettersRegex.test(prev))
         ) {
           start = caretPos;
@@ -633,7 +635,7 @@ export default function (options) {
     return { completeStart: start, completeEnd: end, term };
   }
 
-  function handleKeyDown(e) {
+  async function handleKeyDown(e) {
     let i, term, total, userToComplete;
     let cp;
 
@@ -669,7 +671,7 @@ export default function (options) {
     }
 
     if (completeStart === null && e.which === keys.backSpace && options.key) {
-      let position = guessCompletePosition({ backSpace: true });
+      let position = await guessCompletePosition({ backSpace: true });
       completeStart = position.completeStart;
 
       if (position.completeEnd) {
